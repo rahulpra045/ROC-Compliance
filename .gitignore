@@ -1,0 +1,15 @@
+# your data and local settings - never upload
+db/
+generated/
+config.json
+_update/
+app.log
+.write_test
+
+# build output
+build/
+dist/
+__pycache__/
+*.pyc
+*.exe
+*.prev
