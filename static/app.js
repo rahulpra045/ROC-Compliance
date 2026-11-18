@@ -576,3 +576,15 @@ async function saveUpdSrc() {
   await jpost("/api/update/config", b); $("#updMsg").textContent = "Update source saved."; $("#updTok").value = "";
 }
 setTimeout(() => checkUpdate(false), 3000);
+
+
+// ---------------------------------------------------------------- light / dark mode
+function curTheme() { return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light"; }
+function paintThemeBtn() { const b = $("#themeBtn"); if (b) { const d = curTheme() === "dark"; b.textContent = d ? "☀️" : "🌙"; b.title = d ? "Switch to light mode" : "Switch to dark mode"; } }
+function toggleTheme() {
+  const t = curTheme() === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem("roc_theme", t); } catch (e) {}
+  paintThemeBtn();
+}
+paintThemeBtn();

@@ -4,10 +4,12 @@
 <link rel="icon" type="image/png" href="/api/logo" id="favLink">
 <link rel="stylesheet" href="style.css"></head>
 <body>
+<script>try{var t=localStorage.getItem("roc_theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);else if(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <header>
   <div class="brand"><img src="/api/logo" alt="Logo" class="logo" id="brandLogo" title="View logo" onclick="viewLogo()"><span class="brand-name" onclick="openSettings()" title="Open settings">ROC <span>Compliance</span></span></div>
   <span id="status" class="msg"></span>
   <div class="hdr-right">
+    <button class="ghost theme-btn" id="themeBtn" onclick="toggleTheme()" title="Switch light / dark mode">🌙</button>
     <button class="ghost" onclick="openSettings()">⚙ Settings</button>
     <button class="ghost" onclick="openFolder('generated')">📁 Generated files</button>
     <button class="ghost" onclick="openFolder('db')">🗄 Database folder</button>
