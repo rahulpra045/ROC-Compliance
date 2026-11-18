@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ROC Compliance</title>
+<link rel="icon" type="image/png" href="/api/logo" id="favLink">
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<header>
+  <div class="brand"><img src="/api/logo" alt="Logo" class="logo" id="brandLogo" title="View logo" onclick="viewLogo()"><span class="brand-name" onclick="openSettings()" title="Open settings">ROC <span>Compliance</span></span></div>
+  <span id="status" class="msg"></span>
+  <div class="hdr-right">
+    <button class="ghost" onclick="openSettings()">⚙ Settings</button>
+    <button class="ghost" onclick="openFolder('generated')">📁 Generated files</button>
+    <button class="ghost" onclick="openFolder('db')">🗄 Database folder</button>
+  </div>
+</header>
+<div id="updBanner" class="upd-banner hidden"><span id="updText"></span><button class="primary" id="updBtn" onclick="installUpdate()">Update now</button><button class="ghost" onclick="$('#updBanner').classList.add('hidden')">Later</button></div>
+<div class="layout">
+<nav id="tabs" class="side"></nav>
+<main>
+  <section class="card" id="pick">
+    <h2>Company &amp; year</h2>
+    <div class="grid">
+      <label>Company (from database)
+        <select id="companySel"></select></label>
+      <label>Financial year (ending 31 March)
+        <select id="fySel"></select></label>
+      <div class="row-btn"><button onclick="newCompany()">+ New company</button></div>
+    </div>
+    <div id="loadedMsg" class="msg"></div>
+  </section>
+  <div id="form"></div>
+</main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-bar">
+    <b id="pvTitle">Preview</b><select id="pvMod" style="width:auto" onchange="doPreview(this.value)"></select><span id="pvNote"></span>
+    <span class="sp"></span>
+    <button onclick="closePreview()">← Back to edit</button>
+    <button class="primary" id="pvSaveOne" onclick="finalDownload([PV_CUR])" style="display:none"></button>
+    <button class="primary" id="pvSave" onclick="finalDownload()">⬇ Save &amp; download selected documents</button>
+  </div>
+  <div id="pvBody"></div>
+</div>
+<div id="logoView" class="hidden" onclick="closeLogo()">
+  <div class="lv-card" onclick="event.stopPropagation()">
+    <img id="lvImg" src="/api/logo" alt="Logo">
+    <div class="lv-name">ROC Compliance</div>
+    <div class="lv-btns"><button onclick="closeLogo();openSettings()">Change logo</button><button class="ghost" onclick="closeLogo()">Close</button></div>
+  </div>
+</div>
+<div id="settings" class="modal hidden" style="align-items:center;justify-content:center">
+  <div class="card" style="width:min(720px,94vw);margin:0">
+    <h2 id="setTitle">Choose your folders</h2>
+    <div class="hint" id="setIntro"></div>
+    <label>Folder for generated Word files
+      <div style="display:flex;gap:6px"><input id="setGen"><button onclick="browse('setGen')">Browse…</button></div></label>
+    <label style="margin-top:10px">Folder for the database (company data used to pre-fill next year)
+      <div style="display:flex;gap:6px"><input id="setDb"><button onclick="browse('setDb')">Browse…</button></div></label>
+    <label class="chips" style="margin-top:10px" id="copyRow"><span><input type="checkbox" id="setCopy" checked> Copy existing files and data to the new folders</span></label>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)">
+      <b>Logo</b><div class="hint">Shown in the top-left corner and as the window icon. JPG, JPEG, PNG, GIF, BMP or WEBP. Shared by all laptops using this database folder.</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+        <img id="logoPrev" src="/api/logo" style="height:56px;width:auto;max-width:200px;border-radius:10px;object-fit:contain;border:1px solid var(--line)">
+        <input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/bmp,image/webp,.jpg,.jpeg,.png,.gif,.bmp,.webp" style="display:none" onchange="uploadLogo(this)">
+        <button onclick="$('#logoFile').click()">Upload image…</button>
+        <button class="ghost" onclick="resetLogo()">Use default logo</button>
+        <span id="logoMsg" class="msg"></span>
+      </div></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)">
+      <b>Application updates</b><div class="hint" id="updInfo">Updates never touch your data (database, generated files, settings).</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center">
+        <button onclick="checkUpdate(true)">Check for updates</button>
+        <input type="file" id="updFile" accept=".exe" style="display:none" onchange="updateFromFile(this)">
+        <button onclick="$('#updFile').click()">Install from file…</button>
+        <button class="ghost" id="rollBtn" onclick="rollbackUpdate()">Roll back to previous version</button>
+        <button class="primary hidden" id="updNow" onclick="installUpdate()">Update now</button>
+      </div>
+      <div id="updMsg" class="msg"></div>
+      <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Update source (GitHub)</summary>
+        <label class="hint">version.json address</label><input id="updUrl" placeholder="https://github.com/OWNER/REPO/releases/latest/download/version.json">
+        <label class="hint">Access token (only if the repository is private)</label><input id="updTok" type="password" placeholder="leave blank for a public repository">
+        <button onclick="saveUpdSrc()" style="margin-top:6px">Save update source</button></details>
+    </div>
+    <div id="setErr" class="msg warn"></div>
+    <div class="hint" id="buildInfo" style="margin-top:8px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button id="setCancel" onclick="$('#settings').classList.add('hidden')">Cancel</button>
+      <button class="primary" onclick="saveSettings()">Save folders</button></div>
+  </div>
+</div>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/docx-preview.min.js"></script>
+<script src="app.js"></script>
+</body></html>
