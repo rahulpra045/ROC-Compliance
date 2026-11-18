@@ -1,1 +1,1 @@
-CA details pre-filled from default; in-app updates.
+Added light / dark mode (button in the top bar).
