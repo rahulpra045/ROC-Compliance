@@ -1,1 +1,1 @@
-Added light / dark mode (button in the top bar).
+Light / dark mode. Fix: app reopens by itself after an update.

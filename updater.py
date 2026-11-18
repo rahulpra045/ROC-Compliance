@@ -84,13 +84,16 @@ def _run_bat(lines):
     bat = os.path.join(STAGE, "apply.bat")
     open(bat, "w", encoding="mbcs", errors="replace").write("\r\n".join(lines) + "\r\n")
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    subprocess.Popen(["cmd", "/c", bat], creationflags=flags, close_fds=True, cwd=DATA)
+    # The relaunched exe must NOT inherit PyInstaller's variables, or it looks for this process's
+    # (soon deleted) temp folder and fails with "Failed to load Python DLL ... python312.dll".
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("_MEI", "_PYI"))}
+    subprocess.Popen(["cmd", "/c", bat], creationflags=flags, close_fds=True, cwd=DATA, env=env)
 
 
 def apply_new(new_exe):
     """Swap after this process exits; keep the old exe as ROCCompliance.exe.prev for rollback."""
     cur, prev = EXE, EXE + ".prev"
-    _run_bat(["@echo off", "set n=0", ":w", "set /a n+=1", "if %n% gtr 40 goto done", "timeout /t 1 /nobreak >nul",
+    _run_bat(["@echo off", "set n=0", ":w", "set /a n+=1", "if %n% gtr 40 goto done", "timeout /t 2 /nobreak >nul",
               f'if exist "{prev}" del /f /q "{prev}" >nul 2>&1',
               f'move /y "{cur}" "{prev}" >nul 2>&1', "if errorlevel 1 goto w",
               f'move /y "{new_exe}" "{cur}" >nul', f'start "" "{cur}"', ":done", 'del "%~f0"'])
@@ -99,6 +102,6 @@ def apply_new(new_exe):
 def rollback():
     cur, prev, tmp = EXE, EXE + ".prev", EXE + ".swap"
     if not os.path.exists(prev): raise RuntimeError("There is no previous version to go back to.")
-    _run_bat(["@echo off", "set n=0", ":w", "set /a n+=1", "if %n% gtr 40 goto done", "timeout /t 1 /nobreak >nul",
+    _run_bat(["@echo off", "set n=0", ":w", "set /a n+=1", "if %n% gtr 40 goto done", "timeout /t 2 /nobreak >nul",
               f'move /y "{cur}" "{tmp}" >nul 2>&1', "if errorlevel 1 goto w",
               f'move /y "{prev}" "{cur}" >nul', f'move /y "{tmp}" "{prev}" >nul', f'start "" "{cur}"', ":done", 'del "%~f0"'])
