@@ -1,1 +1,1 @@
-Asks which financial year a new company is for (default = current FY); the year no longer jumps after saving.
+Year prompt only for a new company, warning if you start typing before choosing the year.

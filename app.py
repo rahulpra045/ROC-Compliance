@@ -165,9 +165,9 @@ def _nocache(r):
     r.headers["Cache-Control"] = "no-store"
     return r
 
-APP_VERSION = "3.3"
-APP_BUILD = 4                       # integer; bump for every published release (compared with version.json "build")
-BUILD_ID = "3.3 · 24-Nov-2026"
+APP_VERSION = "3.4"
+APP_BUILD = 5                       # integer; bump for every published release (compared with version.json "build")
+BUILD_ID = "3.4 · 24-Nov-2026"
 import updater
 
 def _upd_cfg():
