@@ -107,7 +107,7 @@ def fill_ca(f):
 
 def blank_form():
     n = datetime.now()
-    y = n.year if n.month >= 4 else n.year - 1
+    y = n.year + 1 if n.month >= 4 else n.year      # current financial year (Apr-Mar), e.g. Nov 2026 -> FY 2026-27
     dflt = get_defaults()
     f = {"company": "", "cin": "", "address": "", "email": "", "phone1": "", "phone2": "",
          "category": CATEGORIES[0], "listed": "Not Applicable", "rta": "NA", "reg_date": "",
@@ -165,9 +165,9 @@ def _nocache(r):
     r.headers["Cache-Control"] = "no-store"
     return r
 
-APP_VERSION = "3.2"
-APP_BUILD = 3                       # integer; bump for every published release (compared with version.json "build")
-BUILD_ID = "3.2 · 18-Nov-2026"
+APP_VERSION = "3.3"
+APP_BUILD = 4                       # integer; bump for every published release (compared with version.json "build")
+BUILD_ID = "3.3 · 24-Nov-2026"
 import updater
 
 def _upd_cfg():

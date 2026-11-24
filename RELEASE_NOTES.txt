@@ -1,1 +1,1 @@
-Light / dark mode. Fix: app reopens by itself after an update.
+Asks which financial year a new company is for (default = current FY); the year no longer jumps after saving.
