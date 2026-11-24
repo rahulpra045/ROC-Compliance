@@ -55,6 +55,7 @@
 <div id="fyAsk" class="modal hidden" style="align-items:center;justify-content:center">
   <div class="card" style="width:min(460px,92vw);margin:0">
     <h2 style="cursor:default">Which financial year are these details for?</h2>
+    <div id="fyAskWarn" class="msg warn hidden" style="font-weight:600">⚠ Please select the financial year before entering details for a new company.</div>
     <div class="hint" id="fyAskCur"></div>
     <label class="fy-row">Financial year (ending 31 March)
       <select id="fyAskSel"></select></label>
@@ -62,7 +63,7 @@
       <input id="fyAskOther" placeholder="2021-22"></label>
     <div id="fyAskErr" class="msg warn"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-      <button onclick="fyAskDone(null)">Cancel</button>
+      <button id="fyAskCancel" onclick="fyAskDone(null)">Cancel</button>
       <button class="primary" onclick="fyAskOk()">Continue</button></div>
   </div>
 </div>

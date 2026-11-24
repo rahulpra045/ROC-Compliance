@@ -417,6 +417,7 @@ let OPEN_SEQ = 0;
 async function openCompany() {
   const id = $("#companySel").value; if (!id) return;
   const fy = $("#fySel").value, my = ++OPEN_SEQ;
+  $("#loadedMsg").textContent = "Loading…";
   const r = await (await fetch(`/api/company/${id}` + (fy ? `?fy=${fy}` : ""))).json();
   if (my !== OPEN_SEQ) return;          // a newer selection was made meanwhile
   S = r.form; HINTS = r.hints || {}; HAS_MAP = r.has_map; CLOSED = {}; FY_PENDING = false; $("#loadedMsg").textContent = r.loaded; render();
@@ -602,7 +603,7 @@ const curFyEnd = () => { const n = new Date(); return n.getMonth() >= 3 ? n.getF
 function paintFy() {
   const e = $("#fyNow"); if (!e) return;
   e.innerHTML = "";
-  if (!S) return;
+  if (!S || $("#companySel").value) return;      // a saved company: the year list above already says which year
   e.append(el("span", {}, "Working on: "), el("b", {}, "FY " + fyLabel(+S.fy_end_year) + (FY_PENDING ? " (not confirmed yet)" : "")), " ",
     el("a", { href: "#", class: "fy-link", onclick: (ev) => { ev.preventDefault(); changeFy(); } }, "Change year"));
 }
@@ -612,9 +613,9 @@ function parseFy(t) {
   if ((m = t.match(/^(\d{4})$/))) return +m[1];      // a single year = the year ending 31 March
   return null;
 }
-function askFy() {
+function askFy(must) {
   return new Promise((res) => {
-    FY_RES = res; const cur = curFyEnd(), sel = $("#fyAskSel"); sel.innerHTML = "";
+    FY_RES = res; $("#fyAskWarn").classList.toggle("hidden", !must); $("#fyAskCancel").classList.toggle("hidden", !!must); const cur = curFyEnd(), sel = $("#fyAskSel"); sel.innerHTML = "";
     $("#fyAskCur").textContent = `Today the current financial year is ${fyLabel(cur)}.`;
     for (let y = cur; y >= cur - 6; y--) sel.append(el("option", { value: y }, fyLabel(y) + (y === cur ? "  (current)" : "")));
     sel.append(el("option", { value: "other" }, "Other – type manually…"));
@@ -631,13 +632,23 @@ function fyAskOk() {
   fyAskDone(y);
 }
 async function changeFy() {
-  const y = await askFy(); if (!y) return;
+  const y = await askFy(false); if (!y) return;
   S.fy_end_year = y; FY_PENDING = false; render();
 }
 async function confirmFy() {
   if (!FY_PENDING) return true;
-  const y = await askFy(); if (!y) return false;
+  const y = await askFy(false); if (!y) return false;
   S.fy_end_year = y; FY_PENDING = false; paintFy(); render(); return true;
 }
 // keep "Working on" line in step with the form
 const _render = render; render = function () { _render.apply(this, arguments); paintFy(); };
+
+// starting to fill a NEW company without having chosen the year -> warn and ask first
+let FY_ASKING = false;
+document.addEventListener("input", async (e) => {
+  if (!FY_PENDING || FY_ASKING || !S || !e.target.closest || !e.target.closest("#form")) return;
+  FY_ASKING = true;
+  const y = await askFy(true);
+  FY_ASKING = false;
+  if (y && FY_PENDING) { S.fy_end_year = y; FY_PENDING = false; paintFy(); render(); }
+}, true);
