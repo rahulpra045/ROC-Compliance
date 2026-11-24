@@ -397,29 +397,32 @@ function yesNo(parent, label, st, std, hintFn, t) {
 }
 
 // ---------------------------------------------------------------- data
-async function loadCompanies(selectId) {
+async function loadCompanies(selectId, selectFy) {
   COMPANIES = await (await fetch("/api/companies")).json();
   const sel = $("#companySel"); sel.innerHTML = "";
   sel.append(el("option", { value: "" }, "— select a company —"));
   COMPANIES.forEach((c) => sel.append(el("option", { value: c.id }, c.company)));
   if (selectId) sel.value = selectId;
-  fillFy();
+  fillFy(selectFy);
 }
-function fillFy() {
+function fillFy(keepFy) {
   const c = COMPANIES.find((x) => x.id === $("#companySel").value); const sel = $("#fySel"); sel.innerHTML = "";
   if (!c) { sel.append(el("option", { value: "" }, "—")); return; }
   const next = fyLabel(+c.years[0].slice(0, 4) + 2);
   sel.append(el("option", { value: "" }, `New year: FY ${next} (pre-filled from ${c.years[0]})`));
   c.years.forEach((y) => sel.append(el("option", { value: y }, `Re-open saved FY ${y}`)));
+  if (keepFy && c.years.includes(keepFy)) sel.value = keepFy;   // stay on the year being worked on
 }
+let OPEN_SEQ = 0;
 async function openCompany() {
   const id = $("#companySel").value; if (!id) return;
-  const fy = $("#fySel").value;
+  const fy = $("#fySel").value, my = ++OPEN_SEQ;
   const r = await (await fetch(`/api/company/${id}` + (fy ? `?fy=${fy}` : ""))).json();
-  S = r.form; HINTS = r.hints || {}; HAS_MAP = r.has_map; CLOSED = {}; $("#loadedMsg").textContent = r.loaded; render();
+  if (my !== OPEN_SEQ) return;          // a newer selection was made meanwhile
+  S = r.form; HINTS = r.hints || {}; HAS_MAP = r.has_map; CLOSED = {}; FY_PENDING = false; $("#loadedMsg").textContent = r.loaded; render();
 }
 async function newCompany() {
-  const r = await (await fetch("/api/new")).json(); S = r.form; HINTS = {}; HAS_MAP = false; CLOSED = {};
+  const r = await (await fetch("/api/new")).json(); S = r.form; HINTS = {}; HAS_MAP = false; CLOSED = {}; FY_PENDING = true;
   $("#companySel").value = ""; fillFy(); $("#loadedMsg").textContent = "New company – fill in the details below; they are saved for next year when you download."; render();
 }
 $("#companySel").onchange = () => { fillFy(); openCompany(); };
@@ -429,6 +432,7 @@ $("#fySel").onchange = openCompany;
 async function doPreview(modId, scope) {
   if (!S) return alert("Select a company or click “New company” first.");
   if (!S.company.trim()) return alert("Please enter the company name.");
+  if (!(await confirmFy())) return;
   if (scope) PV_SCOPE = scope; else if (!PV_SCOPE.includes(modId)) PV_SCOPE = [modId];
   const id = modId || PV_SCOPE[0];
   PV_CUR = id;
@@ -453,6 +457,7 @@ function fetchFile(rel, name) { const a = el("a", { href: "/api/file?rel=" + enc
 async function finalDownload(ids) {
   const chosen = ids || PV_SCOPE;
   if (!chosen.length) return alert("Tick at least one document to generate.");
+  if (!(await confirmFy())) return;
   $("#status").textContent = "Generating…";
   const r = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ form: S, modules: chosen }) });
   const j = await r.json().catch(() => ({})); $("#status").textContent = "";
@@ -464,7 +469,7 @@ async function finalDownload(ids) {
   } else if (j.saved.length === 1) fetchFile(j.saved[0].rel, j.saved[0].name);
   else { const a = el("a", { href: "/api/zip?cid=" + encodeURIComponent(j.cid) + "&fy=" + encodeURIComponent(j.fy) }); document.body.append(a); a.click(); a.remove(); }
   closePreview();
-  await loadCompanies(slug(S.company)); $("#loadedMsg").textContent = `Saved ✓ ${j.saved.length} document(s) in ${j.folder}   (data stored in ${j.db})`;
+  await loadCompanies(slug(S.company), fyLabel(+S.fy_end_year)); $("#loadedMsg").textContent = `Saved ✓ ${j.saved.length} document(s) in ${j.folder}   (data stored in ${j.db})`;
 }
 async function mergePdf(ids) {
   $("#status").textContent = "Building PDF… (can take a minute)";
@@ -473,14 +478,15 @@ async function mergePdf(ids) {
   if (!r.ok) return alert(j.error || "Could not create the PDF");
   if (isDesktop()) { if (confirm("PDF saved ✓\n" + j.path + "\n\nOpen it now?")) await fetch("/api/openfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rel: j.rel }) }); }
   else fetchFile(j.rel, j.name);
-  await loadCompanies(j.cid); $("#loadedMsg").textContent = "Merged PDF saved ✓ " + j.path + "   (company data saved to the database)";
+  await loadCompanies(j.cid, fyLabel(+S.fy_end_year)); $("#loadedMsg").textContent = "Merged PDF saved ✓ " + j.path + "   (company data saved to the database)";
 }
 async function saveProgress(btn) {
   if (!S) return alert("Select a company or click “New company” first.");
   if (!S.company.trim()) return alert("Please enter the company name first.");
+  if (!(await confirmFy())) return;
   const r = await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ form: S }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) return alert(j.error || "Could not save");
-  await loadCompanies(j.cid);
+  await loadCompanies(j.cid, j.fy);
   const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   $("#loadedMsg").textContent = `Saved to database ✓ (${t}) – FY ${j.fy}`;
   if (btn) { const o = btn.textContent; btn.textContent = "✓ Saved"; setTimeout(() => (btn.textContent = o), 1500); }
@@ -588,3 +594,50 @@ function toggleTheme() {
   paintThemeBtn();
 }
 paintThemeBtn();
+
+
+// ---------------------------------------------------------------- which financial year?
+let FY_PENDING = false, FY_RES = null;
+const curFyEnd = () => { const n = new Date(); return n.getMonth() >= 3 ? n.getFullYear() + 1 : n.getFullYear(); };   // Apr-Mar
+function paintFy() {
+  const e = $("#fyNow"); if (!e) return;
+  e.innerHTML = "";
+  if (!S) return;
+  e.append(el("span", {}, "Working on: "), el("b", {}, "FY " + fyLabel(+S.fy_end_year) + (FY_PENDING ? " (not confirmed yet)" : "")), " ",
+    el("a", { href: "#", class: "fy-link", onclick: (ev) => { ev.preventDefault(); changeFy(); } }, "Change year"));
+}
+function parseFy(t) {
+  t = (t || "").trim(); let m;
+  if ((m = t.match(/^(\d{4})\s*[-–\/]\s*(\d{2}|\d{4})$/))) { const a = +m[1], b = m[2].length === 2 ? Math.floor(a / 100) * 100 + +m[2] : +m[2]; return b === a + 1 || (m[2].length === 2 && (a + 1) % 100 === +m[2]) ? a + 1 : null; }
+  if ((m = t.match(/^(\d{4})$/))) return +m[1];      // a single year = the year ending 31 March
+  return null;
+}
+function askFy() {
+  return new Promise((res) => {
+    FY_RES = res; const cur = curFyEnd(), sel = $("#fyAskSel"); sel.innerHTML = "";
+    $("#fyAskCur").textContent = `Today the current financial year is ${fyLabel(cur)}.`;
+    for (let y = cur; y >= cur - 6; y--) sel.append(el("option", { value: y }, fyLabel(y) + (y === cur ? "  (current)" : "")));
+    sel.append(el("option", { value: "other" }, "Other – type manually…"));
+    const have = +S.fy_end_year; sel.value = (have <= cur && have >= cur - 6 && !FY_PENDING) ? have : cur;
+    $("#fyAskOtherRow").classList.add("hidden"); $("#fyAskOther").value = ""; $("#fyAskErr").textContent = "";
+    sel.onchange = () => $("#fyAskOtherRow").classList.toggle("hidden", sel.value !== "other");
+    $("#fyAsk").classList.remove("hidden");
+  });
+}
+function fyAskDone(v) { $("#fyAsk").classList.add("hidden"); const r = FY_RES; FY_RES = null; if (r) r(v); }
+function fyAskOk() {
+  const sel = $("#fyAskSel"); let y = sel.value === "other" ? parseFy($("#fyAskOther").value) : +sel.value;
+  if (!y || y < 1990 || y > 2100) { $("#fyAskErr").textContent = "Please type a year like 2021-22."; return; }
+  fyAskDone(y);
+}
+async function changeFy() {
+  const y = await askFy(); if (!y) return;
+  S.fy_end_year = y; FY_PENDING = false; render();
+}
+async function confirmFy() {
+  if (!FY_PENDING) return true;
+  const y = await askFy(); if (!y) return false;
+  S.fy_end_year = y; FY_PENDING = false; paintFy(); render(); return true;
+}
+// keep "Working on" line in step with the form
+const _render = render; render = function () { _render.apply(this, arguments); paintFy(); };

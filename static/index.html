@@ -28,6 +28,7 @@
         <select id="fySel"></select></label>
       <div class="row-btn"><button onclick="newCompany()">+ New company</button></div>
     </div>
+    <div id="fyNow" class="fy-now"></div>
     <div id="loadedMsg" class="msg"></div>
   </section>
   <div id="form"></div>
@@ -49,6 +50,20 @@
     <img id="lvImg" src="/api/logo" alt="Logo">
     <div class="lv-name">ROC Compliance</div>
     <div class="lv-btns"><button onclick="closeLogo();openSettings()">Change logo</button><button class="ghost" onclick="closeLogo()">Close</button></div>
+  </div>
+</div>
+<div id="fyAsk" class="modal hidden" style="align-items:center;justify-content:center">
+  <div class="card" style="width:min(460px,92vw);margin:0">
+    <h2 style="cursor:default">Which financial year are these details for?</h2>
+    <div class="hint" id="fyAskCur"></div>
+    <label class="fy-row">Financial year (ending 31 March)
+      <select id="fyAskSel"></select></label>
+    <label id="fyAskOtherRow" class="hidden fy-row">Type the year, e.g. 2021-22
+      <input id="fyAskOther" placeholder="2021-22"></label>
+    <div id="fyAskErr" class="msg warn"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button onclick="fyAskDone(null)">Cancel</button>
+      <button class="primary" onclick="fyAskOk()">Continue</button></div>
   </div>
 </div>
 <div id="settings" class="modal hidden" style="align-items:center;justify-content:center">

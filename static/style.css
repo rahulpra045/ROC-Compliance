@@ -76,3 +76,6 @@ button.small{padding:2px 8px;font-size:12px}
 
 .theme-btn{font-size:15px;padding:4px 10px}
 :root[data-theme="dark"] .brand .logo{background:#fff;border-radius:8px;padding:2px 4px}
+.fy-now{margin-top:6px;font-size:14px}.fy-link{margin-left:6px;color:var(--acc)}
+#fyAsk{background:rgba(15,18,24,.6)}
+.fy-row{display:block;margin-top:8px}.fy-row.hidden{display:none}
